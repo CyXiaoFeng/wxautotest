@@ -15,34 +15,13 @@ from selenium.webdriver.common.actions.action_builder import ActionBuilder
 from selenium.webdriver.common.actions.interaction import POINTER_PEN
 from selenium.webdriver.common.actions.pointer_input import PointerInput
 from selenium.webdriver.common.actions.interaction import POINTER_TOUCH
+import comm
 import time
-# W3C 标准的 Capabilities 配置
-# Appium 服务器地址
-APPIUM_SERVER_URL = 'http://localhost:4723'
-caps = {
-    'appium:uiautomator2ServerReadTimeout':24000,
-    'appium:recreateChromeDriverSessions': False,
-    'platformName': 'Android',
-    'platformVersion': '14.0',
-    'deviceName': '75XSJNP7NVSKJJZP',  # 设备名称
-    'appPackage': 'com.tencent.mm',  # 微信的包名
-    # 'appActivity': '.ui.LauncherUI',  # 微信的启动活动
-    'appium:automationName': 'uiautomator2',  # 使用的自动化引擎
-    'appium:noReset': True,  # 不重置应用状态
-    'appium:ensureWebviewsHavePages': True,  # 确保 WebView 页面已加载
-    'newCommandTimeout': 300,  # Appium 超时时间
-    'appium:chromedriverAutodownload': True,  # 启用自动下载
-    'appium:chromedriverExecutable' : "D:\\Downloads\\chromedriver-win64\\chromedriver.exe",
-    # 'appium:chromedriverExecutable' : "F:\\python-prj\\chromedriver-win64\\chromedriver.exe",
-    'appium:autoGrantPermissions': True,
-    'appium:enforceAppInstall': True,
-    "chromeOptions" :  {
-      "androidProcess" : "com.tencent.mm:appbrand0"
-    }
-}
-capabilities_options = UiAutomator2Options().load_capabilities(caps)
+import desired_caps
+
+capabilities_options = UiAutomator2Options().load_capabilities(desired_caps.wxcaps)
 # 启动与 Appium 服务器的会话，第二个参数应为 dict
-driver = webdriver.Remote(APPIUM_SERVER_URL, options=capabilities_options)
+driver = webdriver.Remote(comm.APPIUM_SERVER_URL, options=capabilities_options)
 # 通过点击坐标执行
 def touch_click(x,y):
     actions = ActionChains(driver)
@@ -91,9 +70,10 @@ def tapByW3CAction(element,x=309,y=409):
     actions = ActionChains(driver)
     actions.w3c_actions = ActionBuilder(driver, mouse=PointerInput(interaction.POINTER_TOUCH, "touch"))
     actions.w3c_actions.pointer_action.move_to_location(x, y)
-    actions.w3c_actions.pointer_action.click()
+    actions.w3c_actions.pointer_action.pointer_down()
+    actions.w3c_actions.pointer_action.pause(0.1)
+    actions.w3c_actions.pointer_action.release()
     actions.perform()
-  
   
 
 def get_center_of_element(location, size):
@@ -150,10 +130,30 @@ def switchContext():
         else:
             print(f"normal context = {context}")
 
-# 划动屏幕，可以正确执行
-def swip(element):
+# 获取元素在屏幕上的真实坐标点
+def getElementPointByScreen(element):
     location = element.location
     size = element.size
+    # 窗口大小
+    screenWidth = driver.get_window_size()['width']
+    screenHeight = driver.get_window_size()['height']
+    
+    # 计算缩放因子
+    scale_x = comm.device_width / screenWidth
+    scale_y = comm.device_height / screenHeight
+
+    # 计算元素的中心点坐标
+    center_x = location['x'] + size['width'] / 2
+    center_y = location['y'] + size['height'] / 2
+
+    # 将坐标转换为真实设备上的坐标
+    real_center_x = center_x * scale_x
+    real_center_y = center_y * scale_y + comm.scale_y_addition
+    print(f"Element center coordinates on real device: x={real_center_x}, y={real_center_y}")
+    return round(real_center_x), round(real_center_y)
+
+# 划动屏幕，可以正确执行
+def swipScreen():
     screenWidth = driver.get_window_size()['width']
     screenHeight = driver.get_window_size()['height']
     print(f"screenWidth={screenWidth}, screenHeight={screenHeight}")
@@ -163,28 +163,11 @@ def swip(element):
     endy = screenHeight/9
     driver.swipe(start_x=startx, start_y=starty, end_x=endx, end_y=endy, duration=100)
     print(f"start_x={startx}, start_y={starty}, end_x={endx}, end_y={endy}")
-    # 假设手机屏幕分辨率
-    device_width = 1240  # 手机屏幕宽度
-    device_height = 2772  # 手机屏幕高度
-
-    # 计算缩放因子
-    scale_x = device_width / screenWidth
-    scale_y = device_height / screenHeight
-
-    # 计算元素的中心点坐标
-    center_x = location['x'] + size['width'] / 2
-    center_y = location['y'] + size['height'] / 2
-
-    # 将坐标转换为真实设备上的坐标
-    real_center_x = center_x * scale_x
-    real_center_y = center_y * scale_y
-
-    print(f"Element center coordinates on real device: x={real_center_x}, y={real_center_y}")
+    
 
 def getElement():
     try:
         # print(driver.page_source)
-        
         # element = driver.find_element(By.XPATH, "//wx-view[@class='t-item' or  @class='t-item selected']")
         header = driver.find_element(By.XPATH, "//wx-view[@class='header']")
         size = header.size
@@ -194,21 +177,18 @@ def getElement():
         # time.sleep(5)
         if len(elements) > 0 and elements[0].is_enabled:
             element =  elements[0]
-            swip(element)
-             # 获取元素位置
-            tapByGesture(308,410)
-            # tapByW3CAction(element)
-            # elements[0].click()
+            swipScreen()
+            # 获取元素位置
+            x,y = getElementPointByScreen(element)
+            # tapByGesture(x,y) #此方法可用
+            tapByW3CAction(element)
             print(elements[0].text)
             # print(f"element is enable {element.location}")
-            # actions = ActionChains(driver)
-            # time.sleep(4)
-            # actions.click_and_hold(element)\
-            # .pause(2)\
-            # .move_by_offset(xoffset=screenWidth / 2, yoffset=screenHeight*0.9)\
-            # .pause(2)\
-            # .release()\
-            # .perform()
+            actions = ActionChains(driver)
+            time.sleep(4)
+            actions.context_click(element).perform()
+        driver.tap([(element.location['x'],element.location['y'])])
+        driver.tap([(element.location['x'],element.location['y'])])
         # element.click()
         # tap(element)
         # tapContext()

@@ -5,4 +5,5 @@
 3. npm i --location=global appium
 # 参考网址
 https://monfared.medium.com/gestures-in-appium-part1-history-rectangular-w3c-actions-d3bb58922119
+https://github.com/appium/appium-uiautomator2-driver?tab=readme-ov-file#mobile-type(appium-uiautomator2-driver的详细说明)
 上面网址详细描述了appium从安装到测试的每个步骤

@@ -1,20 +1,17 @@
 # 通过appium+UiAutomator2Options自动化手机端webview，目前通过tap中的driver.execute_script('mobile: clickGesture', {'x': 322, 'y': 409})代码执行成功,w3c目前没有测试成功
 # 参考网址：https://monfared.medium.com/gestures-in-appium-part3-press-and-hold-long-press-21a0d2727c91
-# 手势参考https://github.com/appium/appium-uiautomator2-driver/blob/master/docs/android-mobile-gestures.md
+# 手势参考：https://github.com/appium/appium-uiautomator2-driver/blob/master/docs/android-mobile-gestures.md
+# uiautomator2-driver的参考：https://github.com/appium/appium-uiautomator2-driver?tab=readme-ov-file#mobile-type
+import os
 from command import *
 from appium import webdriver
-from appium.webdriver.common.appiumby import AppiumBy
 from selenium.webdriver.common.by import By
 from appium.options.android import UiAutomator2Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.actions import interaction
 from selenium.webdriver.common.actions.action_builder import ActionBuilder
-from selenium.webdriver.common.actions.interaction import POINTER_PEN
 from selenium.webdriver.common.actions.pointer_input import PointerInput
-from selenium.webdriver.common.actions.interaction import POINTER_TOUCH
 import comm
 import time
 import desired_caps
@@ -22,7 +19,8 @@ import desired_caps
 capabilities_options = UiAutomator2Options().load_capabilities(desired_caps.wxcaps)
 # 启动与 Appium 服务器的会话，第二个参数应为 dict
 driver = webdriver.Remote(comm.APPIUM_SERVER_URL, options=capabilities_options)
-# 通过点击坐标执行
+
+# 通过点击坐标执行，之前曾经执行成功过......
 def touch_click(x,y):
     actions = ActionChains(driver)
     # 点击屏幕 (x, y) 坐标位置
@@ -31,7 +29,6 @@ def touch_click(x,y):
     actions.w3c_actions.pointer_action.pointer_down()
     actions.w3c_actions.pointer_action.pause(0.2)
     actions.w3c_actions.pointer_action.pointer_up()
-    # actions.w3c_actions.pointer_action.pause(2)
     try:
         print(f"tap x={x},y={y}")
         # 执行点击操作
@@ -41,10 +38,11 @@ def touch_click(x,y):
     except WebDriverException as e:
         print(f"操作失败: {e}")
 
+# 执行一个JS的脚本，此命令执行无响应
 def js_click(driver, element):
     driver.execute_script("arguments[0].click();", element)
 
-#  tapByGesture(308, 410})
+#  执行了个mobile的手势点击命令，此命令可正确执行，例：tapByGesture(308, 410})
 def tapByGesture(x=103,y=410):
     driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
 
@@ -81,7 +79,8 @@ def get_center_of_element(location, size):
         'x': location['x'] + size['width'] // 2,
         'y': location['y'] + size['height'] // 2
     }
-# 点击坐标注的形式测试
+
+# 点击坐标的形式测试
 def tapContext():
     # 设置隐式等待
     driver.implicitly_wait(20)
@@ -163,7 +162,11 @@ def swipScreen():
     endy = screenHeight/9
     driver.swipe(start_x=startx, start_y=starty, end_x=endx, end_y=endy, duration=100)
     print(f"start_x={startx}, start_y={starty}, end_x={endx}, end_y={endy}")
-    
+
+# 通过adb命令点击并输入文字
+def input_text_android(text,x,y):
+    os.system(f"adb shell input tap {x} {y}") # 可以执行
+    os.system(f'adb shell input text "{text}"')
 
 def getElement():
     try:
@@ -190,7 +193,6 @@ def getElement():
         driver.tap([(element.location['x'],element.location['y'])])
         driver.tap([(element.location['x'],element.location['y'])])
         # element.click()
-        # tap(element)
         # tapContext()
         # touch_click(driver, element)
         # js_click(driver, element)

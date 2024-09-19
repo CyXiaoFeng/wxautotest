@@ -20,7 +20,7 @@ capabilities_options = UiAutomator2Options().load_capabilities(desired_caps.wxca
 # 启动与 Appium 服务器的会话，第二个参数应为 dict
 driver = webdriver.Remote(comm.APPIUM_SERVER_URL, options=capabilities_options)
 
-# 通过点击坐标执行，之前曾经执行成功过......
+# 通过点击坐标执行，曾经执行成功过......
 def touch_click(x,y):
     actions = ActionChains(driver)
     # 点击屏幕 (x, y) 坐标位置

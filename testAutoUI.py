@@ -8,6 +8,7 @@ from datetime import datetime
 from PIL import ImageGrab
 import cv2
 import numpy as np
+from collections import namedtuple
 
 region = None
 # 创建一个scheduler对象
@@ -45,13 +46,12 @@ def wait_for_element(image, timeout=10, confidence=0.7, check_interval=0.5):
 # 允许的坐标差异，作为去重的条件
 threshold = 10  # 可以根据实际情况调整
 
-
+# 坐标点是否重复
 def is_similar(match1, match2):
     return (
         abs(match1.left - match2.left) < threshold
         and abs(match1.top - match2.top) < threshold
     )
-
 
 def wait_for_elements(image, timeout=10, confidence=0.92, check_interval=0.5):
     start_time = time.time()
@@ -67,8 +67,8 @@ def wait_for_elements(image, timeout=10, confidence=0.92, check_interval=0.5):
             )
             # 逐个检查每个匹配框
             for match in locations:
-                if not any(
-                    is_similar(match, filtered) for filtered in filtered_matches
+                if not any(is_similar(match, filtered) 
+                    for filtered in filtered_matches
                 ):
                     filtered_matches.append(match)
             # print(len(locations))
@@ -118,16 +118,7 @@ def clickDefineImage(locations, index):
     pyautogui.click(location)
 
 
-def clickImageDic(dicImage):
-    try:
-        for di in dicImage:
-            print(f"目标图形集合的图名：{di['src']}")
-            allImage = wait_for_elements(di["src"])
-            time.sleep(0.5)
-            clickDefineImage(allImage, di["index"])
-            time.sleep(0.5)
-    except Exception as e:
-        print(f"发生错误：[获取{di['src']}图片集错误：{e}]")
+
 
 
 def schedulTask(startTime, fun, args=None):
@@ -167,10 +158,10 @@ def activeWin():
         global region
         region = (left, top, width, height)
 
-def get_multiple_button_icons(button_image_path, threshold=0.8, timeout=10, wait_time=1):
+def get_multiple_button_icons(button_image_path, threshold=0.92, timeout=10, wait_time=1):
     # 获取当前活动窗口
     window = gw.getActiveWindow()
-
+    Box = namedtuple('Box', ['left', 'top'])
     if window is not None:
         # 获取窗口的坐标和尺寸
         left, top, right, bottom = window.left, window.top, window.right, window.bottom
@@ -199,21 +190,47 @@ def get_multiple_button_icons(button_image_path, threshold=0.8, timeout=10, wait
                     # 计算中心坐标
                     center_x = x_coords[i] + button_width // 2 + left
                     center_y = y_coords[i] + button_height // 2 + top
-                    click_positions.append((center_x, center_y))
+                    # click_positions.append((center_x, center_y))
+                    click_positions.append(Box(left=center_x, top=center_y))
 
                 # 输出所有匹配的位置
-                print(f"Found {len(click_positions)} button at positions:")
-                return  click_positions # 成功点击后退出函数
+                print(f"Found image {button_image_path} has {len(click_positions)} button at positions:")
+                filtered_matches = []
+                locations = list(click_positions)
+                # return locations
+                # 逐个检查每个匹配框
+                for match in locations:
+                    print(match)
+                    if not any(
+                        is_similar(match, filtered) for filtered in filtered_matches
+                    ):
+                        filtered_matches.append(match)
+                print(f"过滤后匹配图集:{button_image_path}长度:{len(filtered_matches)}")
+                if filtered_matches and len(filtered_matches) > 0:
+                    # print(f"{filtered_matches}")
+                    return filtered_matches
 
             # 检查是否超过超时时间
             if time.time() - start_time >= timeout:
                 print("Timeout reached. Button not found.")
+                raise TimeoutError(f"在10秒内未找到图像: {button_image_path}")
                 break
 
             print(f"Button not found. Retrying in {wait_time} seconds...")
             time.sleep(wait_time)  # 等待一段时间后重试
     else:
         print("No active window found.")
+
+def clickImageDic(dicImage):
+    try:
+        for di in dicImage:
+            print(f"目标图形集合的图名：{di['src']}")
+            allImage = get_multiple_button_icons(di["src"]) #wait_for_elements(di["src"])
+            time.sleep(0.5)
+            clickDefineImage(allImage, di["index"])
+            time.sleep(0.5)
+    except Exception as e:
+        print(f"发生错误：[获取{di['src']}图片集错误：{e}]")
 
 def click_button_icon(button_image_path, timeout=10, threshold=0.8):
     # 获取当前活动窗口
@@ -261,12 +278,13 @@ def click_button_icon(button_image_path, timeout=10, threshold=0.8):
 
 
 def starTest(args=None):
-    click_button_icon("images\\confirm_text.png")
-    click_button_icon("images\\tooth.png")
-    click_button_icon("images\\doctor.png")
-    return
-    clickImages(["images\\confirm_text.png"])
+    # click_button_icon("images\\confirm_text.png")
+    # click_button_icon("images\\tooth.png")
+    # click_button_icon("images\\doctor.png")
+    # return
+    # clickImages(["images\\confirm_text.png"])
     dicImage = [
+        {"src": "images\\confirm_text.png", "index": 0},
         {"src": "images\\tooth.png", "index": 0},
         {"src": "images\\doctor.png", "index": 0},
         {"src": "images\\appointment.png", "index": 1},

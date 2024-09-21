@@ -200,13 +200,12 @@ def get_multiple_button_icons(button_image_path, threshold=0.92, timeout=10, wai
                     # click_positions.append(Box(left=center_x, top=center_y))
 
                 # 输出所有匹配的位置
-                print(f"Found image {button_image_path} has {len(click_positions)} button at positions:")
+                # print(f"Found image {button_image_path} has {len(click_positions)} button at positions:")
                 filtered_matches = []
                 locations = list(click_positions)
                 # return locations
                 # 逐个检查每个匹配框
                 for match in locations:
-                    print(match)
                     if not any(
                         is_tuple_similar(match, filtered) for filtered in filtered_matches
                     ):
@@ -218,11 +217,10 @@ def get_multiple_button_icons(button_image_path, threshold=0.92, timeout=10, wai
 
             # 检查是否超过超时时间
             if time.time() - start_time >= timeout:
-                print("Timeout reached. Button not found.")
                 raise TimeoutError(f"在10秒内未找到图像: {button_image_path}")
                 break
 
-            print(f"Button not found. Retrying in {round(time.time() - start_time)} seconds...")
+            # print(f"Button not found. Retrying in {round(time.time() - start_time)} seconds...")
             time.sleep(wait_time)  # 等待一段时间后重试
     else:
         print("No active window found.")
@@ -267,28 +265,26 @@ def click_button_icon(button_image_path, timeout=10, threshold=0.8,wait_time=0.1
                 click_x = x_coords[0] + button_width // 2 + left  # 计算绝对坐标
                 click_y = y_coords[0] + button_height // 2 + top
                 # 使用 pyautogui 点击
-                pyautogui.click(click_x, click_y,clicks=retry, interval=0.25)
+                pyautogui.click(click_x, click_y,clicks=retry, interval=0.5)
                 print(
                     f"{button_image_path}:{round((time.time() - start_time),2)}:Clicked on button at: ({click_x}, {click_y})"
                 )
                 break
             # 检查是否超过超时时间
             if time.time() - start_time >= timeout:
-                print("Timeout reached. Button not found.")
+                raise TimeoutError(f"在10秒内未找到图像: {button_image_path}")
                 break
             retry = retry+1
-            print(f"{button_image_path}Button not found. Retrying in {retry} seconds...")
+            # print(f"{button_image_path}Button not found. Retrying in {retry} seconds...")
             time.sleep(wait_time)  # 等待一段时间后重试
     else:
         print("No active window found.")
 
 
 def starTest(args=None):
+    stime = time.time()
     click_button_icon("images\\confirm_text.png")
     click_button_icon("images\\tooth.png")
-    # click_button_icon("images\\doctor.png")
-    # return
-    # clickImages(["images\\confirm_text.png"])
     dicImage = [
         # {"src": "images\\confirm_text.png", "index": 0},
         # {"src": "images\\tooth.png", "index": 0},
@@ -297,7 +293,7 @@ def starTest(args=None):
         {"src": "images\\confirm_choose.png", "index": 0},
     ]
     clickImageDic(dicImage)
-
+    print(f"total time={time.time()-stime}")
 
 def startTest():
     try:

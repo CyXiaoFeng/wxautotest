@@ -53,6 +53,12 @@ def is_similar(match1, match2):
         and abs(match1.top - match2.top) < threshold
     )
 
+def is_tuple_similar(match1, match2):
+    return (
+        abs(match1[0] - match2[0]) < threshold
+        and abs(match1[1] - match2[1]) < threshold
+    )
+
 def wait_for_elements(image, timeout=10, confidence=0.92, check_interval=0.5):
     start_time = time.time()
     time.sleep(0.5)
@@ -158,7 +164,7 @@ def activeWin():
         global region
         region = (left, top, width, height)
 
-def get_multiple_button_icons(button_image_path, threshold=0.92, timeout=10, wait_time=1):
+def get_multiple_button_icons(button_image_path, threshold=0.92, timeout=10, wait_time=0.1):
     # 获取当前活动窗口
     window = gw.getActiveWindow()
     Box = namedtuple('Box', ['left', 'top'])
@@ -190,8 +196,8 @@ def get_multiple_button_icons(button_image_path, threshold=0.92, timeout=10, wai
                     # 计算中心坐标
                     center_x = x_coords[i] + button_width // 2 + left
                     center_y = y_coords[i] + button_height // 2 + top
-                    # click_positions.append((center_x, center_y))
-                    click_positions.append(Box(left=center_x, top=center_y))
+                    click_positions.append((center_x, center_y))
+                    # click_positions.append(Box(left=center_x, top=center_y))
 
                 # 输出所有匹配的位置
                 print(f"Found image {button_image_path} has {len(click_positions)} button at positions:")
@@ -202,7 +208,7 @@ def get_multiple_button_icons(button_image_path, threshold=0.92, timeout=10, wai
                 for match in locations:
                     print(match)
                     if not any(
-                        is_similar(match, filtered) for filtered in filtered_matches
+                        is_tuple_similar(match, filtered) for filtered in filtered_matches
                     ):
                         filtered_matches.append(match)
                 print(f"过滤后匹配图集:{button_image_path}长度:{len(filtered_matches)}")
@@ -216,7 +222,7 @@ def get_multiple_button_icons(button_image_path, threshold=0.92, timeout=10, wai
                 raise TimeoutError(f"在10秒内未找到图像: {button_image_path}")
                 break
 
-            print(f"Button not found. Retrying in {wait_time} seconds...")
+            print(f"Button not found. Retrying in {round(time.time() - start_time)} seconds...")
             time.sleep(wait_time)  # 等待一段时间后重试
     else:
         print("No active window found.")
@@ -232,7 +238,7 @@ def clickImageDic(dicImage):
     except Exception as e:
         print(f"发生错误：[获取{di['src']}图片集错误：{e}]")
 
-def click_button_icon(button_image_path, timeout=10, threshold=0.8):
+def click_button_icon(button_image_path, timeout=10, threshold=0.8,wait_time=0.1):
     # 获取当前活动窗口
     window = gw.getActiveWindow()
     if window is not None:
@@ -261,7 +267,7 @@ def click_button_icon(button_image_path, timeout=10, threshold=0.8):
                 click_x = x_coords[0] + button_width // 2 + left  # 计算绝对坐标
                 click_y = y_coords[0] + button_height // 2 + top
                 # 使用 pyautogui 点击
-                pyautogui.click(click_x, click_y,clicks=retry, interval=0.5)
+                pyautogui.click(click_x, click_y,clicks=retry, interval=0.25)
                 print(
                     f"{button_image_path}:{round((time.time() - start_time),2)}:Clicked on button at: ({click_x}, {click_y})"
                 )
@@ -272,20 +278,20 @@ def click_button_icon(button_image_path, timeout=10, threshold=0.8):
                 break
             retry = retry+1
             print(f"{button_image_path}Button not found. Retrying in {retry} seconds...")
-            time.sleep(0.5)  # 等待一段时间后重试
+            time.sleep(wait_time)  # 等待一段时间后重试
     else:
         print("No active window found.")
 
 
 def starTest(args=None):
-    # click_button_icon("images\\confirm_text.png")
-    # click_button_icon("images\\tooth.png")
+    click_button_icon("images\\confirm_text.png")
+    click_button_icon("images\\tooth.png")
     # click_button_icon("images\\doctor.png")
     # return
     # clickImages(["images\\confirm_text.png"])
     dicImage = [
-        {"src": "images\\confirm_text.png", "index": 0},
-        {"src": "images\\tooth.png", "index": 0},
+        # {"src": "images\\confirm_text.png", "index": 0},
+        # {"src": "images\\tooth.png", "index": 0},
         {"src": "images\\doctor.png", "index": 0},
         {"src": "images\\appointment.png", "index": 1},
         {"src": "images\\confirm_choose.png", "index": 0},
